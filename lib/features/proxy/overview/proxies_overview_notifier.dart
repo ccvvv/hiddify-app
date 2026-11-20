@@ -319,6 +319,23 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
     }).run();
   }
 
+  /// Runs a clean, download-only test for every selectable outbound in [tag]'s group.
+  ///
+  /// Clearing first matters: otherwise a failed test could leave an earlier positive speed
+  /// visible and be mistaken for a successful result.
+  Future<void> domesticDownloadTest(String tag) async {
+    final cleared = await ref.read(proxyRepositoryProvider).clearSpeedTests().match((err) {
+      loggy.warning("error clearing speeds before domestic probe", err);
+      return false;
+    }, (_) => true).run();
+    if (!cleared) {
+      final t = ref.read(translationsProvider).requireValue;
+      ref.read(inAppNotificationControllerProvider).showErrorToast(t.pages.proxies.upload.failed);
+      return;
+    }
+    await downloadTest(tag);
+  }
+
   /// Forgets every speed test result, of this run and the earlier ones kept.
   Future<void> clearSpeedTests() async {
     await ref.read(proxyRepositoryProvider).clearSpeedTests().getOrElse((err) {
