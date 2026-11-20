@@ -6,6 +6,7 @@ import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 void main() {
   test('reports stable IDs from candidate tags and excludes private tag text', () {
     final report = DomesticProbeReportBuilder().build(
+      candidateRevision: '2026-11-20T11:00:00Z',
       testedAt: DateTime.utc(2026, 11, 20, 12),
       outbounds: [
         OutboundInfo(
@@ -62,6 +63,7 @@ void main() {
   test('limits candidates and marks failed speeds', () {
     final report = DomesticProbeReportBuilder().build(
       maxNodes: 1,
+      candidateRevision: '2026-11-20T11:00:00Z',
       outbounds: [
         OutboundInfo(
           tag: 'probe_0123456789abcdef01234567__failed-node',
@@ -86,6 +88,7 @@ void main() {
   test('rejects duplicate stable candidate IDs', () {
     expect(
       () => DomesticProbeReportBuilder().build(
+        candidateRevision: '2026-11-20T11:00:00Z',
         outbounds: [
           OutboundInfo(
             tag: 'probe_0123456789abcdef01234567__node-a',
@@ -105,11 +108,18 @@ void main() {
 
   test('rejects empty candidate lists and invalid limits', () {
     expect(
-      () => DomesticProbeReportBuilder().build(outbounds: []),
+      () => DomesticProbeReportBuilder().build(
+        candidateRevision: '2026-11-20T11:00:00Z',
+        outbounds: [],
+      ),
       throwsStateError,
     );
     expect(
-      () => DomesticProbeReportBuilder().build(outbounds: [], maxNodes: 0),
+      () => DomesticProbeReportBuilder().build(
+        candidateRevision: '2026-11-20T11:00:00Z',
+        outbounds: [],
+        maxNodes: 0,
+      ),
       throwsArgumentError,
     );
   });
