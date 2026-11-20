@@ -87,3 +87,11 @@ Adapted pipeline for this fork:
 7. Show a local summary first. Export/upload only after user confirmation.
 
 This borrows the reference project's staged filtering, timeout discipline, reporting, and safe publication boundary without confusing Cloudflare IP speed with proxy-node usability.
+
+## ChatGPT response validation
+
+The first response validator lives in `lib/features/domestic_probe/network/chatgpt_probe_response.dart`. It accepts only HTTP 200 over HTTPS when the final response host is exactly `chatgpt.com`, a `*.chatgpt.com` subdomain, `auth.openai.com`, or the legacy `chat.openai.com` host. It rejects unrelated redirect destinations, non-200 responses, and common browser-challenge markers.
+
+This is a web-service reachability check only. It does not prove that a user account can authenticate, that a session is valid, or that a prompt can be submitted. Do not describe a passing result as a successful account login or a successful ChatGPT conversation.
+
+The validator must be called with the final URI and status from the response returned by `getViaLocalProxy`; do not call it with a separately fetched URL or a response from the normal auto/direct-fallback client. This response validator is a tested unit boundary, not yet a completed end-to-end probe integration.
