@@ -24,7 +24,9 @@ The probe is deliberately serial: only one outbound is selected and tested at a 
 
 Hiddify's existing `DioHttpClient.get(..., proxyOnly: true)` selects its direct client when the local proxy port is closed. In VPN mode that may still be captured by Android's VPN routing, but the method alone does not prove which outbound carried the request.
 
-The probe must therefore add an explicit route-verification guard before classifying any request as passed. If the app cannot prove that the request used the selected outbound (for example, the active outbound has not updated, the tunnel is not running, or the proxy route cannot be verified), classify the result as `inconclusive` or `failed`, never `passed`.
+A new `DioHttpClient.getViaLocalProxy(...)` method has been added for strict probe traffic. It checks that Hiddify's local mixed proxy port is open and always uses the proxy-only Dio client; if the port is closed it throws instead of falling back to DIRECT. On Android VPN mode, the user must enable Hiddify's **Keep open in VPN mode** option so the local proxy port is available. If it is unavailable, the GPT check must be `inconclusive`, not a pass.
+
+The probe must also wait for the active outbound stream to confirm the selected outbound before sending the request. If the active outbound has not updated, the tunnel is not running, or the strict local proxy route cannot be verified, classify the result as `inconclusive` or `failed`, never `passed`.
 
 Do not log or upload raw subscription URLs, server addresses, ports, UUIDs, passwords, keys, or full outbound JSON.
 
