@@ -51,6 +51,7 @@ class DomesticProbeResultClient {
     final deviceId = report['device_id'];
     final network = report['network'];
     final testedAt = report['tested_at'];
+    final candidateRevision = report['candidate_revision'];
     final results = report['results'];
 
     // task_id is deliberately optional: the probe can upload a scheduled
@@ -71,6 +72,10 @@ class DomesticProbeResultClient {
       throw const FormatException('Invalid tested_at');
     }
     DateTime.parse(testedAt);
+    if (candidateRevision is! String || candidateRevision.length > 40) {
+      throw const FormatException('Invalid candidate_revision');
+    }
+    DateTime.parse(candidateRevision);
     if (results is! List || results.isEmpty || results.length > 50) {
       throw const FormatException('Report must contain 1..50 results');
     }
