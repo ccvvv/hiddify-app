@@ -19,9 +19,9 @@ class DomesticProbeCandidateClient {
   DomesticProbeCandidateClient({Dio? dio}) : _dio = dio ?? Dio();
 
   static const candidatesUrl =
-      'https://raw.githubusercontent.com/ccvvv/AutoSubHub/feature/android-domestic-probe-mvp/data/domestic-probe/candidates.yaml';
+      'https://ccvvv.github.io/AutoSubHub/candidates.yaml';
   static const manifestUrl =
-      'https://raw.githubusercontent.com/ccvvv/AutoSubHub/feature/android-domestic-probe-mvp/data/domestic-probe/candidate-manifest.json';
+      'https://ccvvv.github.io/AutoSubHub/candidate-manifest.json';
   static const maxCandidates = 50;
 
   static final RegExp _candidateName =
