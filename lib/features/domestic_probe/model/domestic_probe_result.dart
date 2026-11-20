@@ -1,14 +1,17 @@
-/// The result of checking one outbound from the phone's current network.
+/// Status for an individual probe stage.
 enum ProbeCheckStatus { passed, failed, inconclusive }
 
-/// A deliberately sanitized result. Never put a raw outbound tag, address, UUID,
-/// password, subscription URL, or serialized proxy configuration in this model.
+/// A sanitized result for testing one outbound from the phone's current network.
+///
+/// A successful download through the selected proxy is the primary usability
+/// signal. GPT reachability is optional metadata and never gates usability.
 class DomesticProbeResult {
   const DomesticProbeResult({
     required this.nodeId,
-    required this.gptStatus,
-    required this.speedKiBPerSecond,
+    required this.downloadStatus,
     required this.checkedAt,
+    this.gptStatus,
+    this.speedKiBPerSecond,
     this.protocol,
     this.latencyMs,
     this.httpStatus,
@@ -16,10 +19,16 @@ class DomesticProbeResult {
     this.attempts = 1,
   });
 
-  /// Opaque identifier generated locally; it must not encode a server address or credential.
+  /// Opaque identifier generated locally; it must not encode an address or credential.
   final String nodeId;
   final String? protocol;
-  final ProbeCheckStatus gptStatus;
+
+  /// Whether a non-empty download completed through the selected proxy.
+  final ProbeCheckStatus downloadStatus;
+
+  /// Optional ChatGPT reachability result. It does not affect [usable].
+  final ProbeCheckStatus? gptStatus;
+
   final double? speedKiBPerSecond;
   final int? latencyMs;
 
@@ -31,10 +40,16 @@ class DomesticProbeResult {
 
   static const minimumSpeedKiBPerSecond = 500.0;
 
-  bool get speedPassed =>
-      speedKiBPerSecond != null && speedKiBPerSecond! >= minimumSpeedKiBPerSecond;
+  /// A node is usable when the selected proxy successfully downloaded data.
+  bool get usable =>
+      downloadStatus == ProbeCheckStatus.passed &&
+      speedKiBPerSecond != null &&
+      speedKiBPerSecond! > 0;
 
-  /// GPT reachability and throughput are separate checks. Both must pass for
-  /// the node to be recommended by the first domestic probe.
-  bool get passed => gptStatus == ProbeCheckStatus.passed && speedPassed;
+  /// Compatibility alias for existing UI/report consumers.
+  bool get passed => usable;
+
+  /// A ranking label, not the definition of basic usability.
+  bool get speedPassed =>
+      usable && speedKiBPerSecond! >= minimumSpeedKiBPerSecond;
 }
