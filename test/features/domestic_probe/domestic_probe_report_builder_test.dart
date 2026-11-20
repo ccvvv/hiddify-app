@@ -25,12 +25,14 @@ void main() {
         OutboundInfo(
           tag: 'private-server-name',
           type: 'Shadowsocks',
+          isVisible: true,
           downloadSpeed: Int64(125000),
           urlTestDelay: 120,
         ),
         OutboundInfo(
           tag: 'old-cached-node',
           type: 'VLESS',
+          isVisible: true,
           downloadSpeed: Int64(900000),
           downloadSpeedCached: true,
           urlTestDelay: 0,
@@ -38,12 +40,14 @@ void main() {
         OutboundInfo(
           tag: 'group-entry',
           type: 'Selector',
+          isVisible: true,
           isGroup: true,
           downloadSpeed: Int64(800000),
         ),
         OutboundInfo(
           tag: 'hidden-entry§hide§secret',
           type: 'VMess',
+          isVisible: true,
           downloadSpeed: Int64(800000),
         ),
       ],
@@ -67,9 +71,9 @@ void main() {
     final report = builder.build(
       task: task,
       outbounds: [
-        OutboundInfo(tag: 'failed-node', type: 'Trojan', downloadSpeed: Int64(-1)),
-        OutboundInfo(tag: 'third-node', type: 'TUIC', downloadSpeed: Int64(5000)),
-        OutboundInfo(tag: 'must-not-include', type: 'VMess', downloadSpeed: Int64(5000)),
+        OutboundInfo(tag: 'failed-node', type: 'Trojan', isVisible: true, downloadSpeed: Int64(-1)),
+        OutboundInfo(tag: 'third-node', type: 'TUIC', isVisible: true, downloadSpeed: Int64(5000)),
+        OutboundInfo(tag: 'must-not-include', type: 'VMess', isVisible: true, downloadSpeed: Int64(5000)),
       ],
     );
     final results = report['results'] as List<Map<String, dynamic>>;
@@ -83,7 +87,7 @@ void main() {
     expect(
       () => builder.build(
         task: task,
-        outbounds: [OutboundInfo(tag: 'node', type: 'SS')],
+        outbounds: [OutboundInfo(tag: 'node', type: 'SS', isVisible: true)],
       ),
       throwsStateError,
     );
