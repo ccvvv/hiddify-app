@@ -54,6 +54,7 @@ void main() {
     expect(results[0]['latency_ms'], 120);
     expect(results[1]['status'], 'inconclusive');
     expect(results[1]['download_kbps'], isNull);
+    expect(report['candidate_revision'], '2026-11-20T11:00:00Z');
     expect(report['device_id'], 'mi6-probe-01');
     expect(report.containsKey('task_id'), isFalse);
     expect(report.toString(), isNot(contains('private-server-name')));
