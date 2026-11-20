@@ -60,6 +60,51 @@ The first version exports a user-reviewed JSON report. The user explicitly choos
 - Existing subscription import, normal connection, and normal Hiddify speed test remain unchanged.
 - Build and device testing are required before calling the feature complete.
 
+## Generic GitHub destination configuration
+
+The result-upload feature must be repository-agnostic. Do not hard-code the original author's AutoSubHub repository, owner, branch, workflow name, or credentials into the app.
+
+### User setup
+
+Add a separate **Result upload** settings screen with these fields:
+
+- GitHub repository: required `owner/repository` (accept a repository URL as a convenience, then normalize and validate it).
+- Target branch: optional; default to the repository's default branch.
+- Dispatch event type: configurable, default `domestic-probe-results`.
+- Credential: supplied and authorized by the user for that repository.
+
+Provide **Test connection** before saving. It should validate the repository, credential access, and that the destination has a compatible `repository_dispatch` receiver workflow. Do not claim that a dispatch was processed merely because GitHub accepted the event: GitHub's dispatch API returns no workflow-run identifier. The UI should say "GitHub accepted the event" unless it separately verifies a matching Actions run.
+
+### Credential and privacy requirements
+
+- Never ship a developer's personal access token, repository secret, or default upload destination in the APK.
+- Prefer a narrowly scoped fine-grained token restricted to the selected repository with the minimum permission required by the dispatch endpoint (currently repository Contents: write). Explain the scope and expiry to the user.
+- Store the credential only using Android Keystore-backed encrypted storage; never log it, include it in crash reports, export it, or sync it in plaintext.
+- Provide disconnect/revoke guidance and a **Delete saved credential** action.
+- Upload only the sanitized, user-reviewed report. Exclude server address, port, UUID, password, private key, subscription URL, and full outbound configuration.
+- Require an explicit confirmation for every upload. No automatic upload in the first release.
+- If the selected repository has no compatible receiver workflow, show setup instructions and a sample workflow file the user can add to their own repository. Do not silently send data to another repository.
+
+### Portable payload contract
+
+Keep the event payload versioned and repository-neutral, for example:
+
+- `schema_version`
+- `generated_at`
+- `app_version`
+- `summary` (counts only)
+- `results[]` containing opaque node ID, safe protocol family, download status, positive measured speed when available, latency, attempt count, and check timestamp.
+
+Document the payload schema independently of AutoSubHub. AutoSubHub may remain one example receiver, not a required destination. The receiver workflow is responsible for validating the payload and deciding how to store it.
+
+### Upload UX
+
+1. Show the completed local report and exact destination repository.
+2. Let the user review the fields and counts.
+3. Require a separate **Confirm upload** action.
+4. Show distinct states: not configured, ready, uploading, accepted by GitHub, receiver workflow verified, and failed.
+5. Preserve the local report after failure so the user can retry without repeating the speed test.
+
 ## Reference study: svip-s/cloudflare_ip
 
 The project at https://github.com/svip-s/cloudflare_ip is useful as a reference for the measurement pipeline and Android operational lessons, but it solves a different problem: it discovers and ranks Cloudflare edge IP:port candidates, whereas this fork validates imported proxy outbounds through Hiddify.
