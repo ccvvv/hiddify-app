@@ -80,6 +80,20 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
           // it starts from there
           if (proxies.valueOrNull case final group?)
             FloatingActionButton.small(
+              heroTag: 'domestic-download-probe',
+              onPressed: () async {
+                final count = group.items.where((e) => !e.isGroup).length;
+                if (await ref.read(dialogNotifierProvider.notifier).showSpeedTest(count: count)) {
+                  // This path deliberately tests downloads only, regardless of the app's
+                  // general upload/download/both speed-test preference.
+                  await ref.read(proxiesOverviewNotifierProvider.notifier).downloadTest(group.tag);
+                }
+              },
+              tooltip: 'Domestic download probe',
+              child: const Icon(Icons.download_rounded, size: 24),
+            ),
+          if (proxies.valueOrNull case final group?)
+            FloatingActionButton.small(
               heroTag: 'upload-test',
               onPressed: () async {
                 final count = group.items.where((e) => !e.isGroup && !e.resting).length;
