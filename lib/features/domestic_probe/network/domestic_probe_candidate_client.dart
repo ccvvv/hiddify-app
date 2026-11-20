@@ -25,7 +25,7 @@ class DomesticProbeCandidateClient {
   static const maxCandidates = 50;
 
   static final RegExp _candidateName =
-      RegExp(r"""^\\s*-?\\s*name:\\s*["']?probe_([a-f0-9]{24})__""", multiLine: true);
+      RegExp(r"""^\s*-?\s*name:\s*["']?probe_([a-f0-9]{24})__""", multiLine: true);
 
   final Dio _dio;
 
