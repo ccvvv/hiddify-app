@@ -16,7 +16,7 @@ The 500 KiB/s threshold is a performance label, not a minimum requirement for ba
 
 ## Current implementation boundary
 
-The first implementation must reuse Hiddify's own `ProxyRepository` and core service. It must not start a second VPN service or ask a companion app to control Hiddify.
+The first implementation reuses Hiddify's own `ProxyRepository` and core service. The Proxies page now has a dedicated **Domestic download probe** action. It clears previous speed results, then invokes the core's download-only speed test for the proxy group. Hiddify's core documents that a group test measures each proxy in the group and reports the per-proxy `download_speed`. This avoids a second VPN service or a companion app.
 
 The probe is deliberately serial: only one outbound is selected and tested at a time. This is suitable for low-memory Android devices and avoids competing tunnel switches.
 
@@ -63,7 +63,7 @@ The first version exports a user-reviewed JSON report. The user explicitly choos
 - Android only for the first release.
 - Serial execution; no parallel node switching.
 - No false pass from direct-network fallback.
-- Successful non-empty download through the selected outbound defines basic usability.
+- A fresh, positive per-proxy download speed from the Hiddify core group test defines basic usability.
 - 500 KiB/s is a speed-ranking threshold only; slower successful nodes remain usable.
 - GPT access is optional and does not affect the default pass/fail result.
 - Existing subscription import, normal connection, and normal Hiddify speed test remain unchanged.
