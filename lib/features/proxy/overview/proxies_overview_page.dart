@@ -8,6 +8,7 @@ import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
 import 'package:hiddify/core/widget/adaptive_icon.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/domestic_probe/network/domestic_probe_task_client.dart';
 import 'package:hiddify/features/proxy/keep_top/keep_top_widgets.dart';
 import 'package:hiddify/features/proxy/model/proxy_entity.dart';
 import 'package:hiddify/features/proxy/overview/proxies_overview_notifier.dart';
@@ -92,6 +93,39 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
               tooltip: 'Domestic download probe',
               child: const Icon(Icons.download_rounded, size: 24),
             ),
+          FloatingActionButton.small(
+            heroTag: 'check-domestic-probe-task',
+            onPressed: () async {
+              try {
+                final task = await DomesticProbeTaskClient().fetchRunnableTask();
+                if (!context.mounted) return;
+                await showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('GitHub domestic probe task'),
+                    content: Text(
+                      task == null
+                          ? 'No pending task for this device.'
+                          : 'Task: ${task.taskId}\\nNodes requested: up to ${task.maxNodes}\\nExpires: ${task.expiresAt.toLocal()}\\n\\nTask received only. Testing and upload are not connected yet.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
+              } catch (error) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not check GitHub task: $error')),
+                );
+              }
+            },
+            tooltip: 'Check GitHub probe task',
+            child: const Icon(Icons.cloud_download_outlined, size: 24),
+          ),
           if (proxies.valueOrNull case final group?)
             FloatingActionButton.small(
               heroTag: 'upload-test',
