@@ -157,6 +157,34 @@ class DioHttpClient with InfraLogger {
     );
   }
 
+  /// Sends a request only through Hiddify's local mixed proxy port.
+  ///
+  /// Unlike [get] with proxyOnly=true, this method never falls back to DIRECT
+  /// when the local port is closed. Domestic node probes must fail closed:
+  /// without this guard a successful request could be mistaken for a working
+  /// selected outbound while it actually used the phone's direct network.
+  Future<Response<T>> getViaLocalProxy<T>(
+    String url, {
+    CancelToken? cancelToken,
+    String? userAgent,
+    ({String username, String password})? credentials,
+    ResponseType? responseType,
+  }) async {
+    final portOpen = port > 0 && await isPortOpen("127.0.0.1", port);
+    if (!portOpen) {
+      throw StateError(
+        "Hiddify local proxy is not available; enable Keep open in VPN mode "
+        "before running a strict domestic probe.",
+      );
+    }
+
+    return _dio["proxy"]!.get<T>(
+      url,
+      cancelToken: cancelToken,
+      options: _options(url, userAgent: userAgent, credentials: credentials, responseType: responseType),
+    );
+  }
+
   Options _options(
     String url, {
     String? userAgent,
