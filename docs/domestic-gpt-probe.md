@@ -18,29 +18,20 @@ The 500 KiB/s threshold is a performance label, not a minimum requirement for ba
 
 The first implementation reuses Hiddify's own `ProxyRepository` and core service. The Proxies page now has a dedicated **Domestic download probe** action. It clears previous speed results, then invokes the core's download-only speed test for the proxy group. Hiddify's core documents that a group test measures each proxy in the group and reports the per-proxy `download_speed`. This avoids a second VPN service or a companion app.
 
-The probe is deliberately serial: only one outbound is selected and tested at a time. This is suitable for low-memory Android devices and avoids competing tunnel switches.
+The dedicated button delegates per-outbound measurements to Hiddify's core. The Dart UI makes one group-level download-test call; it does not manually switch the active proxy for each node. The core's RPC contract says a group test measures each proxy in that group and reports the speeds with the proxy entries. Do not claim a particular concurrency level until the core implementation is inspected.
 
 ## First-pass workflow
 
 1. Require an active Hiddify connection and an available proxy group.
-2. Read eligible outbounds from `ProxyRepository.watchProxies()`.
-3. Skip group selectors and non-selectable entries; retain original group/outbound tags only in memory.
-4. Select one outbound with `selectProxy(groupTag, outboundTag)`.
-5. Wait for the active outbound stream to report that outbound as selected. Do not start the request merely because the select call returned.
-6. Use the strict local-proxy route to download a bounded amount of data from a stable HTTPS test endpoint. A successful non-empty download is the primary pass signal.
-7. Record measured throughput. Apply 500 KiB/s only as a speed-ranking threshold, not as a usability gate.
-8. Retry one transient failure once, then continue to the next outbound.
-9. Show a local report. Do not silently upload proxy information.
+2. Count selectable outbound entries for the confirmation dialog.
+3. Clear previous speed-test results. If clearing fails, abort rather than risk showing stale positive speeds.
+4. Call `ProxyRepository.downloadTest(groupTag, bytes)` only. This deliberately ignores the general speed-test direction setting, so upload-only or both-direction preferences cannot change this probe into an upload test.
+5. Hiddify's core tests the group's proxies and reports each proxy's `download_speed`.
+6. A fresh speed greater than 0 means usable. A speed of at least 500 KiB/s is additionally speed-passed; lower positive speeds remain usable.
+7. Show the measured speeds in Hiddify's existing proxy list. Do not silently upload proxy information.
 
-## Important fail-closed networking rule
+The app currently uses Hiddify's existing per-proxy speed fields for display. The standalone `DomesticProbeResult` model is not yet wired into a separate export/report screen.
 
-Hiddify's existing `DioHttpClient.get(..., proxyOnly: true)` may select its direct client when the local proxy port is closed. That method alone does not prove which outbound carried the request.
-
-A new `DioHttpClient.getViaLocalProxy(...)` method has been added for strict probe traffic. It checks that Hiddify's local mixed proxy port is open and always uses the proxy-only Dio client; if the port is closed it throws instead of falling back to DIRECT. On Android VPN mode, the user must enable Hiddify's **Keep open in VPN mode** option so the local proxy port is available.
-
-The probe must also wait for the active outbound stream to confirm the selected outbound before sending the request. If the active outbound has not updated, the tunnel is not running, or the strict local proxy route cannot be verified, classify the result as `inconclusive`, never `passed`.
-
-Do not log or upload raw subscription URLs, server addresses, ports, UUIDs, passwords, keys, or full outbound JSON.
 
 ## Result fields
 
@@ -61,8 +52,8 @@ The first version exports a user-reviewed JSON report. The user explicitly choos
 ## Acceptance criteria
 
 - Android only for the first release.
-- Serial execution; no parallel node switching.
-- No false pass from direct-network fallback.
+- Uses Hiddify core's group-level download-test RPC; the app does not manually switch the active outbound.
+- Uses the core's native per-proxy speed-test path rather than a direct-network HTTP fallback.
 - A fresh, positive per-proxy download speed from the Hiddify core group test defines basic usability.
 - 500 KiB/s is a speed-ranking threshold only; slower successful nodes remain usable.
 - GPT access is optional and does not affect the default pass/fail result.
