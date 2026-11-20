@@ -86,7 +86,7 @@ class ProxiesOverviewPage extends HookConsumerWidget with PresLogger {
                 if (await ref.read(dialogNotifierProvider.notifier).showSpeedTest(count: count)) {
                   // This path deliberately tests downloads only, regardless of the app's
                   // general upload/download/both speed-test preference.
-                  await ref.read(proxiesOverviewNotifierProvider.notifier).downloadTest(group.tag);
+                  await ref.read(proxiesOverviewNotifierProvider.notifier).domesticDownloadTest(group.tag);
                 }
               },
               tooltip: 'Domestic download probe',
