@@ -48,15 +48,18 @@ class DomesticProbeResultClient {
   }
 
   void _validateReport(Map<String, dynamic> report) {
-    final taskId = report['task_id'];
     final deviceId = report['device_id'];
     final network = report['network'];
     final testedAt = report['tested_at'];
     final results = report['results'];
 
-    if (taskId is! String ||
-        !RegExp(r'^mi6-[0-9]{5,}-[0-9]+$').hasMatch(taskId)) {
-      throw const FormatException('Invalid task_id');
+    // task_id is deliberately optional: the probe can upload a scheduled
+    // domestic test receipt without receiving an individual GitHub task.
+    final taskId = report['task_id'];
+    if (taskId != null &&
+        (taskId is! String ||
+            !RegExp(r'^mi6-[0-9]{5,}-[0-9]+$').hasMatch(taskId))) {
+      throw const FormatException('Invalid optional task_id');
     }
     if (deviceId != 'mi6-probe-01') {
       throw const FormatException('Unexpected probe device_id');
@@ -72,7 +75,7 @@ class DomesticProbeResultClient {
       throw const FormatException('Report must contain 1..50 results');
     }
 
-    final nodeIdPattern = RegExp(r'^[A-Za-z0-9_-]{8,80}$');
+    final nodeIdPattern = RegExp(r'^probe_[a-f0-9]{24}$');
     const protocols = {
       'shadowsocks',
       'vmess',
@@ -83,14 +86,17 @@ class DomesticProbeResultClient {
       'other',
     };
     const statuses = {'passed', 'failed', 'inconclusive'};
+    final seenNodeIds = <String>{};
 
     for (final entry in results) {
       if (entry is! Map<String, dynamic>) {
         throw const FormatException('Invalid result entry');
       }
-      if (entry['node_id'] is! String ||
-          !nodeIdPattern.hasMatch(entry['node_id'] as String)) {
-        throw const FormatException('Invalid opaque node_id');
+      final nodeId = entry['node_id'];
+      if (nodeId is! String ||
+          !nodeIdPattern.hasMatch(nodeId) ||
+          !seenNodeIds.add(nodeId)) {
+        throw const FormatException('Invalid or duplicate stable node_id');
       }
       if (!protocols.contains(entry['protocol'])) {
         throw const FormatException('Invalid protocol');
