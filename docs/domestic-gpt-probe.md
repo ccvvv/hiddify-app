@@ -58,3 +58,32 @@ The first version exports a user-reviewed JSON report. The user explicitly choos
 ## Upstream license and release requirements
 
 This repository's `LICENSE.md` states additional conditions beyond GPL-3.0, including keeping the work as a GitHub fork, publishing source, using GitHub Actions for releases, attribution and change notices, non-commercial use without written consent, and restrictions on publishing an app-store build under a name or interface resembling Hiddify. Review those conditions before distributing any APK. This experimental fork must not be represented as an official Hiddify release.
+
+
+## Reference study: svip-s/cloudflare_ip
+
+The project at https://github.com/svip-s/cloudflare_ip is useful as a reference for the **measurement pipeline and Android operational lessons**, but it solves a different problem: it discovers and ranks Cloudflare edge IP:port candidates, whereas this fork must validate imported proxy outbounds through Hiddify.
+
+Reusable ideas:
+- Separate a cheap reachability/latency pre-filter from the more expensive download test.
+- Bound every network operation with connect and total timeouts; isolate failures so one bad candidate does not abort the run.
+- Keep candidate, fast-result, and full-result outputs distinct; report totals and pass rates.
+- Make local-only measurement independent from optional upload/notification steps. A measurement failure must stop publication rather than publish stale or partial results.
+- Provide clear run status and logs, and account for Android background execution, battery restrictions, and wake locks.
+- Keep upload credentials out of source code and make remote publication a separate, explicit stage.
+
+What must **not** be copied directly:
+- Its TCP connect test checks a raw IP:port and its speed test uses curl `--resolve` against Cloudflare's speed endpoint. That is appropriate for Cloudflare edge-IP selection, not for testing SS/VLESS/Trojan/Hysteria2/etc. proxy nodes.
+- Its parallel TCP and download workers (hundreds / dozens) should not be used for the Xiaomi 6 Hiddify probe. Switching the selected outbound is stateful; the first mobile implementation remains serial.
+- Its instruction to exclude Termux from the VPN is specific to measuring the phone's direct route to Cloudflare. Our GPT check must intentionally traverse the selected Hiddify outbound, so it must use the strict local-proxy method and fail closed.
+
+Adapted pipeline for this fork:
+1. Enumerate eligible Hiddify outbounds and preserve group/outbound tags in memory.
+2. Switch one outbound and wait for Hiddify to confirm it is active.
+3. Verify the strict local proxy endpoint is available; no DIRECT fallback.
+4. Run the GPT reachability check with a bounded timeout.
+5. Run the download test separately, then apply the 500 KiB/s threshold.
+6. Retry a transient failure once, record a structured per-node result, and continue serially.
+7. Show a local summary first. Export/upload only after user confirmation.
+
+This borrows the reference project's staged filtering, timeout discipline, reporting, and safe publication boundary without confusing Cloudflare IP speed with proxy-node usability.
