@@ -204,3 +204,15 @@ We thank everyone who takes part in this project, here on GitHub and the many mo
 <p align=center>
 Made with <a target="_blank" href="https://contrib.rocks">Contrib.Rocks</a>
 </p>
+
+
+---
+
+## Experimental fork changes
+
+This repository is a community fork of [Hiddify App](https://github.com/hiddify/hiddify-app). It is not an official Hiddify release.
+
+- Original project and license: [hiddify/hiddify-app](https://github.com/hiddify/hiddify-app) and [LICENSE.md](./LICENSE.md).
+- Experimental additions in this fork: a domestic, serial ChatGPT reachability and download-speed probe. See [docs/domestic-gpt-probe.md](./docs/domestic-gpt-probe.md).
+- Changes are under active development; the probe is not yet integrated into the app UI and no APK has been released.
+- This fork is intended for non-commercial development and testing, subject to the additional conditions in LICENSE.md.
