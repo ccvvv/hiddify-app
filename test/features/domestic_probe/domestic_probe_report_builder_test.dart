@@ -1,41 +1,26 @@
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hiddify/features/domestic_probe/model/domestic_probe_report_builder.dart';
-import 'package:hiddify/features/domestic_probe/model/domestic_probe_task.dart';
 import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
 
 void main() {
-  final task = DomesticProbeTask(
-    taskId: 'mi6-123456789-1',
-    status: DomesticProbeTaskStatus.pending,
-    targetDeviceId: 'mi6-probe-01',
-    scope: DomesticProbeTask.supportedScope,
-    maxNodes: 2,
-    createdAt: DateTime.utc(2026, 11, 20, 10),
-    expiresAt: DateTime.utc(2026, 11, 20, 16),
-  );
-
-  test('builds sanitized report from fresh per-node download speeds', () {
-    var nextId = 0;
-    final builder = DomesticProbeReportBuilder(createNodeId: () => 'node-id-0000000${nextId++}');
-    final report = builder.build(
-      task: task,
+  test('reports stable IDs from candidate tags and excludes private tag text', () {
+    final report = DomesticProbeReportBuilder().build(
       testedAt: DateTime.utc(2026, 11, 20, 12),
       outbounds: [
         OutboundInfo(
-          tag: 'private-server-name',
+          tag: 'probe_0123456789abcdef01234567__private-server-name',
           type: 'Shadowsocks',
           isVisible: true,
           downloadSpeed: Int64(125000),
           urlTestDelay: 120,
         ),
         OutboundInfo(
-          tag: 'old-cached-node',
+          tag: 'probe_abcdef0123456789abcdef01__old-cached-node',
           type: 'VLESS',
           isVisible: true,
           downloadSpeed: Int64(900000),
           downloadSpeedCached: true,
-          urlTestDelay: 0,
         ),
         OutboundInfo(
           tag: 'group-entry',
@@ -50,11 +35,18 @@ void main() {
           isVisible: true,
           downloadSpeed: Int64(800000),
         ),
+        OutboundInfo(
+          tag: 'not-a-candidate',
+          type: 'Trojan',
+          isVisible: true,
+          downloadSpeed: Int64(100000),
+        ),
       ],
     );
 
     final results = report['results'] as List<Map<String, dynamic>>;
     expect(results, hasLength(2));
+    expect(results[0]['node_id'], 'probe_0123456789abcdef01234567');
     expect(results[0]['status'], 'passed');
     expect(results[0]['protocol'], 'shadowsocks');
     expect(results[0]['download_kbps'], 1000);
@@ -62,39 +54,63 @@ void main() {
     expect(results[1]['status'], 'inconclusive');
     expect(results[1]['download_kbps'], isNull);
     expect(report['device_id'], 'mi6-probe-01');
+    expect(report.containsKey('task_id'), isFalse);
     expect(report.toString(), isNot(contains('private-server-name')));
     expect(report.toString(), isNot(contains('old-cached-node')));
   });
 
-  test('limits candidates to task max and marks failed speeds', () {
-    final builder = DomesticProbeReportBuilder(createNodeId: () => 'node-id-12345678');
-    final report = builder.build(
-      task: task,
+  test('limits candidates and marks failed speeds', () {
+    final report = DomesticProbeReportBuilder().build(
+      maxNodes: 1,
       outbounds: [
-        OutboundInfo(tag: 'failed-node', type: 'Trojan', isVisible: true, downloadSpeed: Int64(-1)),
-        OutboundInfo(tag: 'third-node', type: 'TUIC', isVisible: true, downloadSpeed: Int64(5000)),
-        OutboundInfo(tag: 'must-not-include', type: 'VMess', isVisible: true, downloadSpeed: Int64(5000)),
+        OutboundInfo(
+          tag: 'probe_0123456789abcdef01234567__failed-node',
+          type: 'Trojan',
+          isVisible: true,
+          downloadSpeed: Int64(-1),
+        ),
+        OutboundInfo(
+          tag: 'probe_abcdef0123456789abcdef01__second-node',
+          type: 'TUIC',
+          isVisible: true,
+          downloadSpeed: Int64(5000),
+        ),
       ],
     );
     final results = report['results'] as List<Map<String, dynamic>>;
-    expect(results, hasLength(2));
+    expect(results, hasLength(1));
     expect(results.first['status'], 'failed');
     expect(results.first['protocol'], 'trojan');
   });
 
-  test('rejects duplicate or invalid generated node IDs', () {
-    final builder = DomesticProbeReportBuilder(createNodeId: () => 'short');
+  test('rejects duplicate stable candidate IDs', () {
     expect(
-      () => builder.build(
-        task: task,
-        outbounds: [OutboundInfo(tag: 'node', type: 'SS', isVisible: true)],
+      () => DomesticProbeReportBuilder().build(
+        outbounds: [
+          OutboundInfo(
+            tag: 'probe_0123456789abcdef01234567__node-a',
+            type: 'SS',
+            isVisible: true,
+          ),
+          OutboundInfo(
+            tag: 'probe_0123456789abcdef01234567__node-b',
+            type: 'SS',
+            isVisible: true,
+          ),
+        ],
       ),
       throwsStateError,
     );
   });
 
-  test('rejects empty candidate lists', () {
-    final builder = DomesticProbeReportBuilder();
-    expect(() => builder.build(task: task, outbounds: []), throwsStateError);
+  test('rejects empty candidate lists and invalid limits', () {
+    expect(
+      () => DomesticProbeReportBuilder().build(outbounds: []),
+      throwsStateError,
+    );
+    expect(
+      () => DomesticProbeReportBuilder().build(outbounds: [], maxNodes: 0),
+      throwsArgumentError,
+    );
   });
 }
