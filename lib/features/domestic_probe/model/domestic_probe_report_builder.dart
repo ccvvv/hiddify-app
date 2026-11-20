@@ -11,6 +11,7 @@ class DomesticProbeReportBuilder {
 
   Map<String, dynamic> build({
     required List<OutboundInfo> outbounds,
+    required String candidateRevision,
     int maxNodes = 50,
     DateTime? testedAt,
   }) {
@@ -60,7 +61,10 @@ class DomesticProbeReportBuilder {
       };
     }).toList(growable: false);
 
+    DateTime.parse(candidateRevision);
+
     return {
+      'candidate_revision': candidateRevision,
       'device_id': 'mi6-probe-01',
       'network': 'mainland-wifi',
       'tested_at': (testedAt ?? DateTime.now()).toUtc().toIso8601String(),
